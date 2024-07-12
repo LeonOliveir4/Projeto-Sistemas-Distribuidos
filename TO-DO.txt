@@ -1,0 +1,41 @@
+================================================================SISTEMA DISTRIBUÍDO RESPONSÁVEL POR REALIZAR BACKUPS DE ARQUIVOS COM SUPORTE A REPLICAÇÃO DE CONTEÚDO================================================================
+
+Sistema - 4 servidores, 1 gerenciador (middleware), 1 cliente (console - cmd)
+Código python, transparência de distribuição seja priorizada, uso de docker, protocolo tcp.
+
+Fluxo:
+1.No cliente é digitado ou escolhido o nome do arquivo de acordo com arquivos disponiveis no diretório raiz.
+2.O Cliente vai iniciar a conexão, com o middleware
+3. O Middleware deve selecionar 2 servidores sendo o primeiro o caminho original do arquivo, e o segundo o caminho o qual será enviado a cópia desse arquivo a partir do servidor
+4. O arquivo é enviado ao servidor, lá então o arquivo vai ser salvo e então uma cópia dele será enviada para outro servidor (chamando o middleware)
+5. Por fim o servidor de backup vai salvar o arquivo recebido pelo outro servidor
+
+Entrega:
+Individual ou em duplas. (Individual)
+Exclusivamente via Moodle.
+Entregue um arquivo zipado contendo os códigos, alguns arquivos para serem submetidos
+ao sistema (arquivos de teste) e um .pdf contendo a documentação. Não esqueça de colocar o nome da dupla no .pdf. (No meu caso só meu nome mesmo)
+
+sendAll(python) Timeout para conexão tcp
+
+Cada elemento do sistema, como cada servidor, gerenciador e cliente, devem estar dentro
+de diretórios próprios, como sendo elementos computacionais distintos um do outro.
+Acerca dos arquivos de teste, não envie arquivos muito grandes, pois o Moodle possui um
+limite de upload. Entretanto, seu sistema deve ser capaz de garantir a transmissão de
+arquivos de tamanhos grandes também. Mantenha os arquivos no diretório raíz de cada
+elemento (servidores, cliente, etc), por questões de simplicidade.
+Se qualquer um dos pontos especificados acima sobre a entrega não forem cumpridos,
+haverá desconto de nota.
+
+
+Correção
+O projeto será executado no Ubuntu. (Testar execução do .py via ubuntu para garantir funcionamento)
+
+TO DO
+Verificar resposta do prof sobre desenvolvimente do middleware e iniciar o desenvolvimento dele
+Verificar regras com relação a passagem/recebimento do arquivo:
+	1. O arquivo tem que ser repassado "copiado" ou pode ser criado outro arquivo no destino, e repassar só o conteúdo e o nome para preencher lá
+	2. O arquivo pode mudar de nome para salvar no server de backup, ou não?
+	3. É necessário ter a possibilidade de vários arquivos sendo salvos simultaneamente no mesmo servidor (desenvolver sistema de threading?)
+	4. Balanceamento de nós tem que ser feito pelo middleware (para verificar quais servidores teriam disponibilidade no momento para salvar o arquivo)?
+	
