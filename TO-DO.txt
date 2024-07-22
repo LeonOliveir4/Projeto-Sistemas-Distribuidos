@@ -34,8 +34,15 @@ O projeto será executado no Ubuntu. (Testar execução do .py via ubuntu para g
 TO DO
 Verificar resposta do prof sobre desenvolvimente do middleware e iniciar o desenvolvimento dele -> Confirmado, middleware deve ser feito "na mão". -> Compreender o que o middleware precisa.
 Verificar regras com relação a passagem/recebimento do arquivo:
-	1. Para a cópia do arquivo, devo criar outro arquivo no destino, e repassar só o conteúdo e o nome para preencher lá correto?
-	2. O arquivo pode mudar de nome para salvar no server de backup, ou não?
-	3. É necessário ter a possibilidade de vários arquivos sendo salvos simultaneamente no mesmo servidor (desenvolver sistema de threading ou assíncrono?)
-	4. Balanceamento de nós tem que ser feito pelo middleware (para verificar quais servidores teriam disponibilidade no momento para salvar o arquivo)?
+	1. Para a cópia do arquivo, devo criar outro arquivo no destino, e repassar só o conteúdo e o nome para preencher lá correto? - Isso mesmo, confirmado dia 18/07 em sala
+	2. O arquivo pode mudar de nome para salvar no server de backup, ou não? - Até pode, mas tem que considerar o caso mais transparente ao usuário.
+	3. É necessário ter a possibilidade de vários arquivos sendo salvos simultaneamente no mesmo servidor (desenvolver sistema de threading ou assíncrono?) -Threading.
+	4. Balanceamento de nós tem que ser feito pelo middleware (para verificar quais servidores teriam disponibilidade no momento para salvar o arquivo)? - Sim, mas tem que tomar cuidado quanto a atualização desse dado.
+
+Até o momento foi feita a conexão fim a fim, passando todo o conteúdo de um arquivo relativamente grande.
+Próximo passo é considerar: 
+1 - Comunicar para o Middleware a capacidade do servidor.
+2 - Considerar que qualquer tipo de arquivo pode ser enviar. (ajustar, no momento só conteúdo q pode ser totalmente decodificado funciona.
+3 - Mudar para o formato de threading
+4 - Considerar transparência.
 
