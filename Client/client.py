@@ -1,5 +1,5 @@
 from socket import *
-
+from asyncio import * 
 def selectFile():
     fileName = input('input the file name (with the extensio) that you want to transfer: ')
     #print(f'{fileName} fileName\n')
@@ -7,7 +7,10 @@ def selectFile():
     print(f'{f} f\n')
     outputdata = f.read()
     #print(f'{outputdata} out\n')
-    callMiddleware(outputdata.encode())
+    file = {"name": fileName, "content": outputdata}
+    file_serialized = f"name:{file['name']};content:{file['content']}"
+    file_encoded = file_serialized.encode()
+    callMiddleware(file_encoded)
 
 #This function will call the middleware sending the file
 def callMiddleware(file):
