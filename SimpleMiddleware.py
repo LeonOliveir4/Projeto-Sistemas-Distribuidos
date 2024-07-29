@@ -5,28 +5,23 @@ import sys
 
 def handle_client(connectionSocket, addr):
     try:
-        data = b''
-        while True:
-            chunk = connectionSocket.recv(8192)
-            data += chunk
-            if b"<FIM>" in data:
-                data = data[:data.find(b"<FIM>")]
-                break
-        separatorIndex = data.find(b';')
-        fileName = data[5: separatorIndex].decode()
-        fileContent = data[separatorIndex + 1:]
-        
+        print(f"Connection from {addr}")
         serverSocket = callServer(addr)
-        serverSocket.sendall(f"file:{fileName};".encode())
-        serverSocket.sendall(fileContent)
-        while chunk := connectionSocket.recv(8192):
-            if b"<FIM>" in chunk:
-                serverSocket.sendall(chunk[:chunk.find(b"<FIM>")])
+        bytes = 0
+        while True:
+            chunk = connectionSocket.recv(65536)
+            if not chunk:
                 break
+            bytes += len(chunk)
             serverSocket.sendall(chunk)
-        serverSocket.sendall(b"<FIM>")
-        modifiedMessage = serverSocket.recv(8192)
-        print(modifiedMessage.decode())
+            if b"<END>" in chunk:
+                print(f"End of transmission detected from {addr}")
+                break
+
+        print(f"Total bytes forwarded: {bytes}")
+        serverSocket.sendall(b"<END>")
+        modifiedMessage = serverSocket.recv(65536)
+        print(f"Received confirmation from server for {addr}: {modifiedMessage.decode()}")
         serverSocket.close()
     except IOError:
         print("Closing connection - IOError")

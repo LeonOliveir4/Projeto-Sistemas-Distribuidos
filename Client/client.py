@@ -1,4 +1,5 @@
 from socket import *
+import zlib
 
 def selectFile():
     while True:
@@ -14,9 +15,13 @@ def callMiddleware(fileName):
     clientSocket = socket(AF_INET, SOCK_STREAM)
     clientSocket.connect((('localhost'), middlewarePort))
     with open(fileName, 'rb') as f:
-        clientSocket.sendall(f"file:{fileName};".encode())
-        while chunk := f.read(8192):
-            clientSocket.sendall(chunk)
+        clientSocket.sendall(f"file:{fileName};comprimido;".encode())
+        compressor = zlib.compressobj()
+        while chunk := f.read(65536):
+            compressedChunk = compressor.compress(chunk)
+            if compressedChunk:
+                clientSocket.sendall(compressedChunk)
+        clientSocket.sendall(compressor.flush())
     clientSocket.sendall(b"<FIM>")
     clientSocket.close()
 
