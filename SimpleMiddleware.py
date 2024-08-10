@@ -3,15 +3,15 @@ from threading import Thread, Event, Lock
 import json
 import signal
 import sys
-import time
+import random
 
 with open('config/config.json') as config_file:
     config = json.load(config_file)
     
 stopEvent = Event()
 servers = [(server["host"], server["port"]) for server in config["servers"]]
-serverLoads = {}
 loadLock = Lock()
+serverLoads = {}
 
 # Método que pega o status do servidor para selecionar para qual será enviado o arquivo
 def getServerStatus(serverAddress):
@@ -35,43 +35,48 @@ def atualizaInfosDoServer():
                 serverLoads[server] = load_info
 
 # Seleciona servidor para enviar o arquivo
-def selectServer():
-    with loadLock:
+# Para isso é feito o seguinte -> Se tem info dos servidores, pega o que tem mais utilização disponível de cpu (serverLoads[k])
+# Para o servidor de backup pega o segundo menor (diferente do primeiro)
+# Se não tem info, pega randomicamente o principal e depois o de backup desde que seja diferente
+def selectServers():
+    try:
         if not serverLoads:
-            return servers[0]  # Se não houver informações, use o primeiro servidor
-        return min(serverLoads, key=lambda k: float(serverLoads[k].split(',')[0].split(':')[1].strip().replace('%', '')))
+            # Verifica se há pelo menos dois servidores disponíveis
+            if len(servers) < 2:
+                raise ValueError("Número insuficiente de servidores para replicação.")
+            
+            primary = random.choice(servers)
+            replica = random.choice([s for s in servers if s != primary])
+            return primary, replica
+        
+        # Quando há dados de carga disponíveis
+        primary = min(serverLoads, key=lambda k: float(serverLoads[k].split(',')[0].split(':')[1].strip().replace('%', '')))
+        
+        # Filtra o servidor primário para escolher o de backup
+        replica_candidates = [s for s in serverLoads if s != primary]
+        
+        # Verifica se há pelo menos um servidor disponível para backup
+        if not replica_candidates:
+            raise ValueError("Número insuficiente de servidores para replicação.")
+        
+        replica = min(replica_candidates, key=lambda k: float(serverLoads[k].split(',')[0].split(':')[1].strip().replace('%', '')))
+        return primary, replica
 
-# Thread que vai receber e já enviar o arquivo ao servidor
+    except ValueError as ve:
+        print(f"Erro: {ve}")
+        raise  # Re-levanta a exceção para lidar mais adiante ou para debugging
+    except Exception as e:
+        print(f"Erro inesperado na seleção de servidores: {e}")
+        raise  # Re-levanta a exceção para que seja tratada mais adiante
+
+# Thread para lidar com o cliente
 def handle_client(connectionSocket, addr):
     try:
         print(f"Conexão de {addr}")
         atualizaInfosDoServer()  # Atualiza as informações dos servidores a cada nova conexão
-        server = selectServer()
-        print(f"Encaminhando para o servidor: {server} com carga: {serverLoads.get(server, 'N/A')}")
-        serverSocket = socket(AF_INET, SOCK_STREAM)
-        serverSocket.connect(server)
-        bytes = 0
-        while not stopEvent.is_set():
-            chunk = connectionSocket.recv(65536)
-            if not chunk:
-                break
-            bytes += len(chunk)
-            serverSocket.sendall(chunk)
-            if b"<FIM>" in chunk:
-                print(f"Fim da transmissão de arquivos proveniente de {addr}")
-                break
-        print(f"bytes enviados: {bytes}")
-
-        modifiedMessage = b""
-        while True:
-            chunk = serverSocket.recv(65536)
-            if not chunk:
-                break
-            modifiedMessage += chunk
-            if b"<CONFIRMADO>" in modifiedMessage:
-                print(f"Recebendo confirmação do server {addr}")
-                break
-        serverSocket.close()
+        primary, replica = selectServers()
+        response = json.dumps({"primary": primary, "replica": replica})
+        connectionSocket.sendall(response.encode())
     except IOError:
         print("Fechando conexão - IOError")
     finally:

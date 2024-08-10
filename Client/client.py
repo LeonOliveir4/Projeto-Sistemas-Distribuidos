@@ -1,81 +1,62 @@
-from socket import *
-from threading import Thread, Lock, Event
+import os
 import json
-import signal
+from socket import *
 import zlib
-import sys
 
-transferStatus = {}
-statusLock = Lock()
-stopEvent = Event()
-
-# Carregar configuração
-with open('../config/config.json') as configFile:
-    config = json.load(configFile)
-
-def selectFile():
-    #Função apenas para receber sinal (Ctrl + C) e fechar o servidor sem dar algum tipo de erro gigante.
-    def signal_handler(sig, frame):
-        print('Sinal de fechar a conexão recebido')
-        stopEvent.set()
-        sys.exit() 
-    signal.signal(signal.SIGINT, signal_handler)
-    
-    while not stopEvent is set:
-        fileName = input("Digite qual arquivo deseja fazer o backup ou digite sair caso não deseje mais transferir ou status caso deseje saber o status das transferências: ")
-        if fileName.lower() == 'sair':
-            print("Fechando...")
-            break
-        elif fileName.lower() == 'status':
-            showStatus()
-        else:
-            thread = Thread(target=handle_middleware, args=(fileName,))
-            thread.start()
-            thread.join(timeout=5)
-    
-#Thread que chama o middleware enviando o arquivo
-def handle_middleware(fileName):
+def send_file(fileName, middlewareHost, middlewarePort):
     try:
-        middlewareHost = config["middleware"]["host"]
-        middlewarePort = config["middleware"]["port"]
         clientSocket = socket(AF_INET, SOCK_STREAM)
         clientSocket.connect((middlewareHost, middlewarePort))
+        clientSocket.sendall(b"GET_SERVERS")
+        
+        response = clientSocket.recv(1024)
+        server_info = json.loads(response.decode())
+        primary = tuple(server_info["primary"])
+        replica = tuple(server_info["replica"])
+        clientSocket.close()
+        
+        # Enviar arquivo para o servidor primário
         with open(fileName, 'rb') as f:
-            clientSocket.sendall(f"file:{fileName};comprimido;".encode())
+            primarySocket = socket(AF_INET, SOCK_STREAM)
+            primarySocket.connect(primary)
+            header = f"file:{fileName};comprimido;".encode()
+            primarySocket.sendall(header)
             compressor = zlib.compressobj()
             while chunk := f.read(65536):
                 compressedChunk = compressor.compress(chunk)
                 if compressedChunk:
-                    clientSocket.sendall(compressedChunk)
-                with statusLock:
-                    transferStatus[fileName] = "Enviando"
-            clientSocket.sendall(compressor.flush())
-        clientSocket.sendall(b"<FIM>")
-        updateStatus(fileName, "Completo")
-        print(f"Transferência do arquivo {fileName} concluída.")
-        clientSocket.close()
+                    primarySocket.sendall(compressedChunk)
+            primarySocket.sendall(compressor.flush())
+            primarySocket.sendall(b"<FIM>")
+            confirmation = primarySocket.recv(1024)
+            print(confirmation.decode())
+            primarySocket.close()
+
     except FileNotFoundError:
         print(f"Arquivo {fileName} não encontrado.")
-        updateStatus(fileName, "Arquivo não encontrado")
     except ConnectionRefusedError:
-        print(f"Não foi possível conectar ao middleware em {middlewarePort} para transferir o arquivo {fileName}.")
-        updateStatus(fileName, "Conexão recusada")
+        print(f"Não foi possível conectar ao middleware em {middlewareHost}:{middlewarePort} para transferir o arquivo {fileName}.")
     except Exception as e:
         print(f"Erro ao enviar o arquivo {fileName}: {e}")
-        updateStatus(fileName, "Erro")
-        
-#Atualiza o status do arquivo
-def updateStatus(fileName, status):
-    with statusLock:
-        transferStatus[fileName] = status
 
-#Caso o cliente queira saber o status das transferências
-def showStatus():
-    with statusLock:
-        if not transferStatus:
-            print("Nenhuma transferência em andamento ou concluída.")
+# Exibir menu do cliente
+def client_menu():
+    middlewareHost = 'localhost'
+    middlewarePort = 7001
+    while True:
+        print("\nMenu:")
+        print("1. Backup de arquivo")
+        print("2. Sair")
+        choice = input("Escolha uma opção: ")
+        if choice == "1":
+            fileName = input("Digite o nome do arquivo: ")
+            if os.path.exists(fileName):
+                send_file(fileName, middlewareHost, middlewarePort)
+            else:
+                print("Arquivo não encontrado.")
+        elif choice == "2":
+            break
         else:
-            for file, status in transferStatus.items():
-                print(f"Arquivo: {file}, Status: {status}")
+            print("Opção inválida.")
 
-selectFile()
+client_menu()
