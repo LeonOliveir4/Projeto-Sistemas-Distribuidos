@@ -25,6 +25,7 @@ def send_file(fileName, middlewareHost, middlewarePort):
             while chunk := f.read(65536):
                 compressedChunk = compressor.compress(chunk)
                 if compressedChunk:
+                    primarySocket.sendall(replica)
                     primarySocket.sendall(compressedChunk)
             primarySocket.sendall(compressor.flush())
             primarySocket.sendall(b"<FIM>")

@@ -44,7 +44,7 @@ Próximo passo é considerar:
 1 - Comunicar para o Middleware a capacidade do servidor. (FEITO)
 2 - Considerar que qualquer tipo de arquivo pode ser enviar. (ajustar, no momento só conteúdo q pode ser totalmente decodificado funciona. (FEITO)
 3 - Mudar para o formato de threading (FEITO)
-4 - Considerar transparência. (CONFIRMAR)
-5 - Usar a capacidade do servidor para verificar para onde o arquivo vai ser enviado
-6 - Otimizar
+4 - Considerar transparência. (EM ANDAMENTO)
+5 - Usar a capacidade do servidor para verificar para onde o arquivo vai ser enviado (FEITO)
+6 - Otimizar (FEITO)
 
