@@ -5,7 +5,8 @@ import signal
 import sys
 import random
 
-with open('config/config.json') as config_file:
+# Carregar configurações do sistema
+with open('config/systemConfig.json') as config_file:
     config = json.load(config_file)
     
 stopEvent = Event()
@@ -21,6 +22,7 @@ def getServerStatus(serverAddress):
         clientSocket.sendall(b"STATUS")
         data = clientSocket.recv(1024).decode()
         clientSocket.close()
+        print(f"Status do servidor {serverAddress}: {data}")  # Log do status do servidor
         return data
     except Exception as e:
         print(f"Erro ao conectar ao servidor {serverAddress}: {e}")
@@ -30,57 +32,67 @@ def getServerStatus(serverAddress):
 def atualizaInfosDoServer():
     with loadLock:
         for server in servers:
-            load_info = getServerStatus(server)
-            if load_info:
-                serverLoads[server] = load_info
+            loadInfo = getServerStatus(server)
+            if loadInfo:
+                serverLoads[server] = loadInfo
+            print(f"Info atualizada do servidor {server}: {loadInfo}")  # Log de atualização de informações
 
 # Seleciona servidor para enviar o arquivo
-# Para isso é feito o seguinte -> Se tem info dos servidores, pega o que tem mais utilização disponível de cpu (serverLoads[k])
-# Para o servidor de backup pega o segundo menor (diferente do primeiro)
-# Se não tem info, pega randomicamente o principal e depois o de backup desde que seja diferente
 def selectServers():
     try:
         if not serverLoads:
-            # Verifica se há pelo menos dois servidores disponíveis
             if len(servers) < 2:
-                raise ValueError("Número insuficiente de servidores para replicação.")
+                raise ValueError("Número insuficiente de servidores para efetuar backup.")
             
             primary = random.choice(servers)
-            replica = random.choice([s for s in servers if s != primary])
-            return primary, replica
+            backup = random.choice([s for s in servers if s != primary])
+            print(f"Servidores selecionados (sem carga): Primário={primary}, Backup={backup}")  # Log dos servidores selecionados
+            return primary, backup
         
-        # Quando há dados de carga disponíveis
         primary = min(serverLoads, key=lambda k: float(serverLoads[k].split(',')[0].split(':')[1].strip().replace('%', '')))
         
-        # Filtra o servidor primário para escolher o de backup
-        replica_candidates = [s for s in serverLoads if s != primary]
+        backup_candidates = [s for s in serverLoads if s != primary]
         
-        # Verifica se há pelo menos um servidor disponível para backup
-        if not replica_candidates:
-            raise ValueError("Número insuficiente de servidores para replicação.")
+        if not backup_candidates:
+            raise ValueError("Número insuficiente de servidores para efetuar backup.")
         
-        replica = min(replica_candidates, key=lambda k: float(serverLoads[k].split(',')[0].split(':')[1].strip().replace('%', '')))
-        return primary, replica
+        backup = min(backup_candidates, key=lambda k: float(serverLoads[k].split(',')[0].split(':')[1].strip().replace('%', '')))
+        print(f"Servidores selecionados (com carga): Primário={primary}, Backup={backup}")  # Log dos servidores selecionados com base na carga
+        return primary, backup
 
     except ValueError as ve:
-        print(f"Erro: {ve}")
-        raise  # Re-levanta a exceção para lidar mais adiante ou para debugging
+        print(f"Erro na seleção de servidores: {ve}")
+        raise
     except Exception as e:
         print(f"Erro inesperado na seleção de servidores: {e}")
-        raise  # Re-levanta a exceção para que seja tratada mais adiante
+        raise
 
 # Thread para lidar com o cliente
 def handle_client(connectionSocket, addr):
     try:
-        print(f"Conexão de {addr}")
-        atualizaInfosDoServer()  # Atualiza as informações dos servidores a cada nova conexão
-        primary, replica = selectServers()
-        response = json.dumps({"primary": primary, "replica": replica})
+        print(f"Conexão de {addr} recebida.")  # Log da conexão do cliente
+        atualizaInfosDoServer()
+        primary, backup = selectServers()
+
+        # Envia as informações do servidor primário para o cliente
+        response = json.dumps({"primary": primary})
         connectionSocket.sendall(response.encode())
-    except IOError:
-        print("Fechando conexão - IOError")
+        print(f"Informações do servidor primário {primary} enviadas para o cliente {addr}.")  # Log de envio para o cliente
+
+        # Envia as informações do servidor de backup diretamente para o servidor primário
+        primarySocket = socket(AF_INET, SOCK_STREAM)
+        primarySocket.connect(primary)
+        backup_info = json.dumps({"backup": backup})
+        primarySocket.sendall(backup_info.encode())
+        print(f"Informações do servidor de backup {backup} enviadas para o servidor primário {primary}.")  # Log de envio do backup
+        primarySocket.close()
+
+    except IOError as io_error:
+        print(f"Erro de I/O ao lidar com o cliente {addr}: {io_error}")  # Log detalhado em caso de erro de I/O
+    except Exception as e:
+        print(f"Erro inesperado ao lidar com o cliente {addr}: {e}")  # Log detalhado para qualquer outro tipo de erro
     finally:
-        print("Fechando conexão de thread do middleware")
+        print(f"Fechando conexão com o cliente {addr}.")  # Log ao fechar a conexão
         connectionSocket.close()
 
 # Inicia o Middleware
@@ -91,7 +103,6 @@ def startMiddleware():
     middlewareSocket.listen(5)
     middlewareSocket.settimeout(1)
     
-    # Função apenas para parar o middleware caso queira (CTRL + C)
     def signal_handler(sig, frame):
         print('Sinal de fechar a conexão recebido')
         stopEvent.set()
@@ -100,16 +111,17 @@ def startMiddleware():
     
     signal.signal(signal.SIGINT, signal_handler)
     try:
-        print('Middleware Iniciado')
+        print('Middleware Iniciado na porta', serverPort)
         while not stopEvent.is_set():
             try:
                 connectionSocket, addr = middlewareSocket.accept()
+                print(f"Nova conexão de {addr}.")  # Log de nova conexão
                 client_thread = Thread(target=handle_client, args=(connectionSocket, addr))
                 client_thread.start()
             except timeout:
                 continue
     except Exception as e:
-        print(f"Erro: {e}")
+        print(f"Erro no middleware: {e}")  # Log de erro geral no middleware
     finally:
         print('Desligando middleware')
         middlewareSocket.close()

@@ -12,20 +12,18 @@ def send_file(fileName, middlewareHost, middlewarePort):
         response = clientSocket.recv(1024)
         server_info = json.loads(response.decode())
         primary = tuple(server_info["primary"])
-        replica = tuple(server_info["replica"])
         clientSocket.close()
         
         # Enviar arquivo para o servidor primário
         with open(fileName, 'rb') as f:
             primarySocket = socket(AF_INET, SOCK_STREAM)
             primarySocket.connect(primary)
-            header = f"file:{fileName};comprimido;".encode()
+            header = f"arquivo:{fileName};comprimido;".encode()
             primarySocket.sendall(header)
             compressor = zlib.compressobj()
             while chunk := f.read(65536):
                 compressedChunk = compressor.compress(chunk)
                 if compressedChunk:
-                    primarySocket.sendall(replica)
                     primarySocket.sendall(compressedChunk)
             primarySocket.sendall(compressor.flush())
             primarySocket.sendall(b"<FIM>")
@@ -42,8 +40,12 @@ def send_file(fileName, middlewareHost, middlewarePort):
 
 # Exibir menu do cliente
 def client_menu():
-    middlewareHost = 'localhost'
-    middlewarePort = 7001
+    # Carregar configuração do cliente
+    with open('clientConfig.json') as config_file:
+        config = json.load(config_file)
+    
+    middlewareHost = config['middleware']['host']
+    middlewarePort = config['middleware']['port']
     while True:
         print("\nMenu:")
         print("1. Backup de arquivo")

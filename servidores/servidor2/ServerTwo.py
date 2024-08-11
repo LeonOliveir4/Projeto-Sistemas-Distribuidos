@@ -183,7 +183,7 @@ def startServer(config, serverConfig, currentDir):
 
 def main():
     currentDir = os.path.dirname(os.path.abspath(__file__))
-    configPath = os.path.join(currentDir, 'configServerOne.json')
+    configPath = os.path.join(currentDir, 'configServerTwo.json')
     with open(configPath) as configFile:
         config = json.load(configFile)
 

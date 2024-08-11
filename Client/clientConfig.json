@@ -1,0 +1,6 @@
+{
+    "middleware": {
+        "host": "localhost",
+        "port": 7001
+    }
+}
