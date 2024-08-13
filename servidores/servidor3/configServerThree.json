@@ -7,7 +7,7 @@
         {
             "host": "localhost",
             "port": 7004,
-            "rootDir": "servidor3"
+            "rootDir": "Servidor3"
         }
     ]
 }
