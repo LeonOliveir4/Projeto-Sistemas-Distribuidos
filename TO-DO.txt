@@ -41,8 +41,10 @@ Verificar regras com relação a passagem/recebimento do arquivo:
 
 Até o momento foi feita a conexão fim a fim, passando todo o conteúdo de um arquivo relativamente grande.
 Próximo passo é considerar: 
-1 - Comunicar para o Middleware a capacidade do servidor.
+1 - Comunicar para o Middleware a capacidade do servidor. (FEITO)
 2 - Considerar que qualquer tipo de arquivo pode ser enviar. (ajustar, no momento só conteúdo q pode ser totalmente decodificado funciona. (FEITO)
-3 - Mudar para o formato de threading
-4 - Considerar transparência.
+3 - Mudar para o formato de threading (FEITO)
+4 - Considerar transparência. (EM ANDAMENTO)
+5 - Usar a capacidade do servidor para verificar para onde o arquivo vai ser enviado (FEITO)
+6 - Otimizar (FEITO)
 

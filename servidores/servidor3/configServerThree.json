@@ -1,0 +1,13 @@
+{
+    "middleware": {
+        "host": "localhost",
+        "port": 7001
+    },
+    "servers": [
+        {
+            "host": "localhost",
+            "port": 7004,
+            "rootDir": "Servidor3"
+        }
+    ]
+}
