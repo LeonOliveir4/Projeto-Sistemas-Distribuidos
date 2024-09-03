@@ -1,7 +1,7 @@
 # Projeto-Sistemas-Distribuidos
 Projeto da Disciplina de Sistemas Distribuídos - UFABC - Sistema distribuído responsável por realizar backups de arquivos com suporte a replicação de conteúdo
 
- 3.1. Critérios de Seleção  
+ Critérios de Seleção - Middleware
  A seleção dos servidores primário e de backup é feita da seguinte forma, tem um método
  que pega status de cpu, memória e threads ativas do servidor, então são comparados por
  ordem de importância inicialmente carga de cpu e se der empate, carga de memória,
