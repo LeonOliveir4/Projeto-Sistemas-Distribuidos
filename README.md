@@ -1,7 +1,7 @@
 # Projeto-Sistemas-Distribuidos
 Projeto da Disciplina de Sistemas Distribuídos - UFABC - Sistema distribuído responsável por realizar backups de arquivos com suporte a replicação de conteúdo
 
- 3.1. Critérios de Seleção
+ 3.1. Critérios de Seleção\**
  A seleção dos servidores primário e de backup é feita da seguinte forma, tem um método
  que pega status de cpu, memória e threads ativas do servidor, então são comparados por
  ordem de importância inicialmente carga de cpu e se der empate, carga de memória,
@@ -13,7 +13,7 @@ Projeto da Disciplina de Sistemas Distribuídos - UFABC - Sistema distribuído r
  esse servidor na lista de servidores válidos selecionávels, mas caso menos de 2 servidores
  válidos estejam na lista, então é chamada novamente a função de buscar o status.
 
-Instruções de Execução:
+Instruções de Execução:\**
 Necessário ter o python (python 3) disponível no Windows ou no Ubuntu, cmd no Windows e xterm no Ubuntu, e algumas libs as quais já serão importadas ao projeto quando clonar como `socket, Thread, Event, Lock, os, json, signal, sys, random, zlib, select, sys, signal, subprocess e platorm, time`.
  1. **Atualize a lista de pacotes**:
  `sudo apt-get update`
